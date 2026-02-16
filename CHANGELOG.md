@@ -1,3 +1,8 @@
+# FlutterMediaCach
+
+
+
+
 ## 1.0.0
 
 * Initial release of Flutter Media Cache
@@ -12,3 +17,6 @@
 * Web platform support with memory-based caching
 * Integration with path_provider_master for directory access
 * Platform-specific implementations (IO for native, Web for browsers)
+
+
+---

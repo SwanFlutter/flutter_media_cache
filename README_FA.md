@@ -12,7 +12,7 @@
 - ✅ **مدیریت کش**: پاک کردن کش، حذف فایل‌های منقضی، بررسی حجم کش
 - ✅ **استفاده آسان**: ویجت‌های ساده مشابه `cached_network_image`
 - ✅ **قابل تنظیم**: پیکربندی حجم، مدت زمان و رفتار کش
-- ✅ **چند پلتفرمی**: کار با Android، iOS، Windows، macOS و Linux
+- ✅ **چند پلتفرمی**: کار با Android، iOS، Windows، macOS، Linux و Web
 
 ## نصب
 
@@ -21,7 +21,6 @@
 ```yaml
 dependencies:
   flutter_media_cache: ^1.0.0
-  path_provider_master: ^1.0.0
 ```
 
 سپس دستور زیر را اجرا کنید:
@@ -64,30 +63,47 @@ CachedImage(
 )
 ```
 
-### 3. استفاده از ویدئوهای کش شده
+### 3. کش و نمایش ویدئوها
 
 ```dart
 CachedVideo(
   videoUrl: 'https://example.com/video.mp4',
-  builder: (context, videoFile) {
-    if (videoFile == null) return SizedBox();
-    return VideoPlayerWidget(file: videoFile);
+  builder: (context, videoData) {
+    if (videoData == null) return SizedBox();
+    // استفاده از video_player برای نمایش
+    return VideoPlayer(file: videoData);
   },
 )
 ```
 
-## مستندات کامل
+## مستندات
 
-برای مستندات کامل، فایل [doc/README.md](doc/README.md) را مشاهده کنید.
+### مستندات اصلی
+- **[doc/README.md](doc/README.md)** - مستندات کامل API با مثال‌های تفصیلی
+
+### راهنمای‌های تخصصی
+- **[WEB_SUPPORT.md](WEB_SUPPORT.md)** - پشتیبانی وب و بهترین روش‌ها
+- **[VIDEO_CACHING_GUIDE.md](VIDEO_CACHING_GUIDE.md)** - راهنمای کش و نمایش ویدئو (English)
+- **[VIDEO_CACHING_GUIDE_FA.md](VIDEO_CACHING_GUIDE_FA.md)** - راهنمای کش و نمایش ویدئو (فارسی)
+
+### مراجع سریع
+- **[PACKAGE_STRUCTURE.md](PACKAGE_STRUCTURE.md)** - معماری و ساختار پکیج
 
 ## مثال
 
-پوشه [example](example) را برای یک مثال کامل و کاربردی بررسی کنید.
+برای مثال‌های کامل، پوشه [example](example) را ببینید:
 
 ```bash
 cd example
 flutter run
 ```
+
+### فایل‌های مثال
+- `example/lib/main.dart` - اپلیکیشن دمو کامل
+- `example/lib/advanced_example.dart` - الگوهای استفاده پیشرفته
+- `example/lib/list_example.dart` - کش کردن کارآمد در لیست‌ها
+- `example/lib/complete_video_example.dart` - کش و پخش ویدئو
+- `example/lib/video_player_example.dart` - یکپارچه‌سازی video_player
 
 ## API
 
@@ -101,7 +117,7 @@ await MediaCacheManager.initialize(config: CacheConfig(...));
 final imageData = await MediaCacheManager.instance.getImage(url);
 
 // دریافت ویدئوی کش شده
-final videoFile = await MediaCacheManager.instance.getVideo(url);
+final videoData = await MediaCacheManager.instance.getVideo(url);
 
 // پاک کردن کش
 await MediaCacheManager.instance.clearCache();
@@ -129,8 +145,10 @@ CachedImage(
 ```dart
 CachedVideo(
   videoUrl: 'https://example.com/video.mp4',
-  builder: (context, videoFile) {
-    return VideoPlayer(file: videoFile);
+  builder: (context, videoData) {
+    // روی native: videoData = File
+    // روی web: videoData = Uint8List
+    return VideoPlayer(file: videoData);
   },
   placeholder: CircularProgressIndicator(),
   errorWidget: Icon(Icons.error),
@@ -150,18 +168,14 @@ CacheConfig(
 
 ## پشتیبانی پلتفرم‌ها
 
-| پلتفرم | پشتیبانی |
-|--------|----------|
-| Android | ✅ |
-| iOS | ✅ |
-| Windows | ✅ |
-| macOS | ✅ |
-| Linux | ✅ |
-| Web | ✅ |
-
-## مستندات وب
-
-برای اطلاعات کامل در مورد پشتیبانی وب، فایل [WEB_SUPPORT.md](WEB_SUPPORT.md) را ببینید.
+| پلتفرم | وضعیت |
+|--------|--------|
+| Android | ✅ پشتیبانی کامل |
+| iOS | ✅ پشتیبانی کامل |
+| Windows | ✅ پشتیبانی کامل |
+| macOS | ✅ پشتیبانی کامل |
+| Linux | ✅ پشتیبانی کامل |
+| Web | ✅ پشتیبانی کامل (کش حافظه) |
 
 ## مجوز
 

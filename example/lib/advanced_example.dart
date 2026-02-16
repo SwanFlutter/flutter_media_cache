@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_media_cache/flutter_media_cache.dart';
 
@@ -7,8 +9,8 @@ class AdvancedExamples {
   static Future<void> customConfiguration() async {
     await MediaCacheManager.initialize(
       config: const CacheConfig(
-        maxCacheDuration: Duration(days: 30), // Cache for 30 days
-        maxCacheSize: 200 * 1024 * 1024, // 200MB
+        maxCacheDuration: Duration(days: 30),
+        maxCacheSize: 200 * 1024 * 1024,
         useMemoryCache: true,
         maxMemoryCacheSize: 150,
       ),
@@ -18,45 +20,37 @@ class AdvancedExamples {
   /// Example 2: Programmatic image caching
   static Future<void> programmaticImageCache() async {
     final imageUrl = 'https://example.com/image.jpg';
-
-    // Get cached image data
     final imageData = await MediaCacheManager.instance.getImage(imageUrl);
 
     if (imageData != null) {
-      print('Image loaded from cache: ${imageData.length} bytes');
+      debugPrint('Image loaded from cache: ${imageData.length} bytes');
     } else {
-      print('Failed to load image');
+      debugPrint('Failed to load image');
     }
   }
 
   /// Example 3: Programmatic video caching
   static Future<void> programmaticVideoCache() async {
     final videoUrl = 'https://example.com/video.mp4';
-
-    // Get cached video file
     final videoFile = await MediaCacheManager.instance.getVideo(videoUrl);
 
-    if (videoFile != null && await videoFile.exists()) {
-      print('Video cached at: ${videoFile.path}');
-      print('Video size: ${await videoFile.length()} bytes');
+    if (videoFile != null) {
+      debugPrint('Video cached successfully');
     } else {
-      print('Failed to cache video');
+      debugPrint('Failed to cache video');
     }
   }
 
   /// Example 4: Cache management
   static Future<void> cacheManagement() async {
-    // Get current cache size
     final size = await MediaCacheManager.instance.getCacheSize();
-    print('Current cache size: ${MediaCacheManager.formatBytes(size)}');
+    debugPrint('Current cache size: ${MediaCacheManager.formatBytes(size)}');
 
-    // Clear expired cache only
     await MediaCacheManager.instance.clearExpiredCache();
-    print('Expired cache cleared');
+    debugPrint('Expired cache cleared');
 
-    // Clear all cache
     await MediaCacheManager.instance.clearCache();
-    print('All cache cleared');
+    debugPrint('All cache cleared');
   }
 
   /// Example 5: Custom image widget with loading progress
@@ -131,12 +125,11 @@ class AdvancedExamples {
           return const Center(child: Text('Video not available'));
         }
 
-        // Use with video_player package
         return Container(
           color: Colors.black,
           child: Center(
             child: Text(
-              'Video cached at:\n${videoFile.path}',
+              'Video cached successfully',
               style: const TextStyle(color: Colors.white),
               textAlign: TextAlign.center,
             ),
@@ -179,18 +172,18 @@ class AdvancedExamples {
 
   /// Example 8: Batch image preloading
   static Future<void> preloadImages(List<String> imageUrls) async {
-    print('Preloading ${imageUrls.length} images...');
+    debugPrint('Preloading ${imageUrls.length} images...');
 
     for (final url in imageUrls) {
       try {
         await MediaCacheManager.instance.getImage(url);
-        print('Preloaded: $url');
+        debugPrint('Preloaded: $url');
       } catch (e) {
-        print('Failed to preload $url: $e');
+        debugPrint('Failed to preload $url: $e');
       }
     }
 
-    print('Preloading complete');
+    debugPrint('Preloading complete');
   }
 
   /// Example 9: Cache statistics
@@ -206,20 +199,19 @@ class AdvancedExamples {
 
   /// Example 10: Conditional caching based on network
   static Future<void> conditionalCaching(String imageUrl) async {
-    // Check if already cached
     final imageData = await MediaCacheManager.instance.getImage(imageUrl);
 
     if (imageData != null) {
-      print('Using cached image');
+      debugPrint('Using cached image');
     } else {
-      print('Downloading and caching image');
+      debugPrint('Downloading and caching image');
     }
   }
 }
 
 /// Example widget demonstrating advanced usage
 class AdvancedCacheDemo extends StatefulWidget {
-  const AdvancedCacheDemo({Key? key}) : super(key: key);
+  const AdvancedCacheDemo({super.key});
 
   @override
   State<AdvancedCacheDemo> createState() => _AdvancedCacheDemoState();
@@ -282,7 +274,6 @@ class _AdvancedCacheDemoState extends State<AdvancedCacheDemo> {
               ],
             ),
           ),
-
           // Action buttons
           Padding(
             padding: const EdgeInsets.all(16),
@@ -318,7 +309,6 @@ class _AdvancedCacheDemoState extends State<AdvancedCacheDemo> {
               ],
             ),
           ),
-
           // Image grid
           Expanded(child: AdvancedExamples.imageGrid(_imageUrls)),
         ],

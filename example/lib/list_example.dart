@@ -3,7 +3,7 @@ import 'package:flutter_media_cache/flutter_media_cache.dart';
 
 /// Example showing efficient image caching in lists
 class ListExample extends StatelessWidget {
-  const ListExample({Key? key}) : super(key: key);
+  const ListExample({super.key});
 
   // Generate sample image URLs
   List<String> get imageUrls => List.generate(
@@ -249,7 +249,7 @@ class ListExample extends StatelessWidget {
 
 /// Example showing lazy loading with pagination
 class LazyLoadingExample extends StatefulWidget {
-  const LazyLoadingExample({Key? key}) : super(key: key);
+  const LazyLoadingExample({super.key});
 
   @override
   State<LazyLoadingExample> createState() => _LazyLoadingExampleState();

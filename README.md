@@ -15,7 +15,7 @@ A powerful and easy-to-use Flutter package for caching images and videos with au
 - ✅ **Cache Management**: Clear cache, remove expired files, check cache size
 - ✅ **Easy to Use**: Simple widgets similar to `cached_network_image`
 - ✅ **Customizable**: Configure cache size, duration, and behavior
-- ✅ **Cross-Platform**: Works on Android, iOS, Windows, macOS, and Linux
+- ✅ **Cross-Platform**: Works on Android, iOS, Windows, macOS, Linux, and Web
 
 ## Installation
 
@@ -66,28 +66,48 @@ CachedImage(
 )
 ```
 
-### 3. Use Cached Videos
+### 3. Cache and Display Videos
 
 ```dart
 CachedVideo(
   videoUrl: 'https://example.com/video.mp4',
-  builder: (context, videoFile) {
-    if (videoFile == null) return SizedBox();
-    return VideoPlayerWidget(file: videoFile);
+  builder: (context, videoData) {
+    if (videoData == null) return SizedBox();
+    // Use video_player package to display
+    return VideoPlayer(file: videoData);
   },
 )
 ```
 
+## Documentation
 
+### Main Documentation
+- **[doc/README.md](doc/README.md)** - Complete API documentation with detailed examples
+
+### Platform-Specific Guides
+- **[WEB_SUPPORT.md](WEB_SUPPORT.md)** - Web platform support and best practices
+- **[VIDEO_CACHING_GUIDE.md](VIDEO_CACHING_GUIDE.md)** - How to cache and display videos (English)
+- **[VIDEO_CACHING_GUIDE_FA.md](VIDEO_CACHING_GUIDE_FA.md)** - راهنمای کش و نمایش ویدئو (فارسی)
+
+### Quick References
+- **[README_FA.md](README_FA.md)** - فارسی راهنمای سریع
+- **[PACKAGE_STRUCTURE.md](PACKAGE_STRUCTURE.md)** - Package architecture and structure
 
 ## Example
 
-Check out the [example](example) folder for a complete working example.
+Check out the [example](example) folder for complete working examples:
 
 ```bash
 cd example
 flutter run
 ```
+
+### Example Files
+- `example/lib/main.dart` - Complete demo application
+- `example/lib/advanced_example.dart` - Advanced usage patterns
+- `example/lib/list_example.dart` - Efficient caching in lists
+- `example/lib/complete_video_example.dart` - Video caching and playback
+- `example/lib/video_player_example.dart` - Video player integration
 
 ## API Overview
 
@@ -101,7 +121,7 @@ await MediaCacheManager.initialize(config: CacheConfig(...));
 final imageData = await MediaCacheManager.instance.getImage(url);
 
 // Get cached video
-final videoFile = await MediaCacheManager.instance.getVideo(url);
+final videoData = await MediaCacheManager.instance.getVideo(url);
 
 // Clear cache
 await MediaCacheManager.instance.clearCache();
@@ -129,8 +149,9 @@ CachedImage(
 ```dart
 CachedVideo(
   videoUrl: 'https://example.com/video.mp4',
-  builder: (context, videoFile) {
-    return VideoPlayer(file: videoFile);
+  builder: (context, videoData) {
+    // videoData is File on native, Uint8List on web
+    return VideoPlayer(file: videoData);
   },
   placeholder: CircularProgressIndicator(),
   errorWidget: Icon(Icons.error),
@@ -150,20 +171,26 @@ CacheConfig(
 
 ## Platform Support
 
-| Platform | Supported |
-|----------|-----------|
-| Android | ✅ |
-| iOS | ✅ |
-| Windows | ✅ |
-| macOS | ✅ |
-| Linux | ✅ |
-| Web | ✅ |
-
-## Web Support
-
-For detailed web platform support information, see [WEB_SUPPORT.md](WEB_SUPPORT.md).
+| Platform | Status |
+|----------|--------|
+| Android | ✅ Fully supported |
+| iOS | ✅ Fully supported |
+| Windows | ✅ Fully supported |
+| macOS | ✅ Fully supported |
+| Linux | ✅ Fully supported |
+| Web | ✅ Fully supported (memory cache) |
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Credits
+
+Inspired by:
+- [cached_network_image](https://pub.dev/packages/cached_network_image)
+- [fast_cached_network_image](https://pub.dev/packages/fast_cached_network_image)
+
+Uses:
+- [path_provider_master](https://pub.dev/packages/path_provider_master)
+- [http](https://pub.dev/packages/http)
+- [crypto](https://pub.dev/packages/crypto)
