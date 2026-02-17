@@ -20,7 +20,7 @@
 
 ```yaml
 dependencies:
-  flutter_media_cache: ^1.0.0
+  flutter_media_cache: ^1.0.1
 ```
 
 سپس دستور زیر را اجرا کنید:

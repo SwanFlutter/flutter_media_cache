@@ -61,7 +61,7 @@ class AdvancedExamples {
       height: 200,
       fit: BoxFit.cover,
       borderRadius: BorderRadius.circular(16),
-      placeholder: Container(
+      placeholder: (context, url) => Container(
         width: 300,
         height: 200,
         decoration: BoxDecoration(
@@ -77,7 +77,7 @@ class AdvancedExamples {
           ],
         ),
       ),
-      errorWidget: Container(
+      errorWidget: (context, url, error) => Container(
         width: 300,
         height: 200,
         decoration: BoxDecoration(

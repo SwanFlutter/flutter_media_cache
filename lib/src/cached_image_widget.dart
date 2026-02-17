@@ -10,10 +10,11 @@ class CachedImage extends StatefulWidget {
   final String imageUrl;
 
   /// Widget to display while loading
-  final Widget? placeholder;
+  final Widget Function(BuildContext context, String url)? placeholder;
 
   /// Widget to display on error
-  final Widget? errorWidget;
+  final Widget Function(BuildContext context, String url, Object error)?
+  errorWidget;
 
   /// Image fit mode
   final BoxFit fit;
@@ -46,6 +47,7 @@ class _CachedImageState extends State<CachedImage> {
   Uint8List? _imageData;
   bool _isLoading = true;
   bool _hasError = false;
+  Object? _error;
 
   @override
   void initState() {
@@ -65,6 +67,7 @@ class _CachedImageState extends State<CachedImage> {
     setState(() {
       _isLoading = true;
       _hasError = false;
+      _error = null;
     });
 
     try {
@@ -74,6 +77,9 @@ class _CachedImageState extends State<CachedImage> {
           _imageData = data;
           _isLoading = false;
           _hasError = data == null;
+          if (data == null) {
+            _error = Exception('Failed to load image');
+          }
         });
       }
     } catch (e) {
@@ -81,6 +87,7 @@ class _CachedImageState extends State<CachedImage> {
         setState(() {
           _isLoading = false;
           _hasError = true;
+          _error = e;
         });
       }
     }
@@ -92,11 +99,15 @@ class _CachedImageState extends State<CachedImage> {
 
     if (_isLoading) {
       child =
-          widget.placeholder ??
+          widget.placeholder?.call(context, widget.imageUrl) ??
           const Center(child: CircularProgressIndicator());
     } else if (_hasError || _imageData == null) {
       child =
-          widget.errorWidget ??
+          widget.errorWidget?.call(
+            context,
+            widget.imageUrl,
+            _error ?? Exception('Unknown error'),
+          ) ??
           const Center(
             child: Icon(Icons.error_outline, color: Colors.red, size: 48),
           );

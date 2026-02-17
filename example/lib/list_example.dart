@@ -71,7 +71,7 @@ class ListExample extends StatelessWidget {
                   imageUrl: imageUrls[index],
                   height: 200,
                   fit: BoxFit.cover,
-                  placeholder: Container(
+                  placeholder: (context, url) => Container(
                     height: 200,
                     color: Colors.grey[300],
                     child: const Center(child: CircularProgressIndicator()),
@@ -132,7 +132,7 @@ class ListExample extends StatelessWidget {
                   child: CachedImage(
                     imageUrl: imageUrls[index],
                     fit: BoxFit.cover,
-                    placeholder: Container(
+                    placeholder: (context, url) => Container(
                       color: Colors.grey[300],
                       child: const Center(child: CircularProgressIndicator()),
                     ),
@@ -178,7 +178,7 @@ class ListExample extends StatelessWidget {
                     child: CachedImage(
                       imageUrl: imageUrls[index],
                       fit: BoxFit.cover,
-                      placeholder: Container(
+                      placeholder: (context, url) => Container(
                         color: Colors.grey[300],
                         child: const Center(
                           child: Column(

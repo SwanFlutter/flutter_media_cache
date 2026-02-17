@@ -195,11 +195,11 @@ class _MediaCacheDemoPageState extends State<MediaCacheDemoPage> {
               child: CachedImage(
                 imageUrl: imageUrls[index],
                 fit: BoxFit.cover,
-                placeholder: Container(
+                placeholder: (context, url) => Container(
                   color: Colors.grey[300],
                   child: const Center(child: CircularProgressIndicator()),
                 ),
-                errorWidget: Container(
+                errorWidget: (context, url, error) => Container(
                   color: Colors.red[100],
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
