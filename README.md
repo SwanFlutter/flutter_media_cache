@@ -34,7 +34,7 @@ backoff retry, per-download progress streams, and conditional HTTP GET.
 
 ```yaml
 dependencies:
-  flutter_media_cache: ^2.0.0
+  flutter_media_cache: ^2.0.1
 ```
 
 ### Initialize once

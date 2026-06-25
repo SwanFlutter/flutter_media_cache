@@ -1,11 +1,16 @@
 # Changelog
 
-All notable changes to `flutter_media_cache` will be documented here.
-This project adheres to [Semantic Versioning](https://semver.org/).
+
+
+## [2.0.1] — 2026-06-25
+
+
+- Fixed: Fix pub point.
+
 
 ---
 
-## [2.0.0] — 2025-XX-XX
+## [2.0.0] — 2026-06-25
 
 ### ⚠️ Breaking Changes
 - Complete rewrite — public API is redesigned. See README for migration guide.

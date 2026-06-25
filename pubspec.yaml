@@ -1,9 +1,6 @@
 name: flutter_media_cache
-description: >
-  Production-grade Flutter media caching library with LRU eviction,
-  priority download queue, deduplication, retry logic, progress streams,
-  and conditional HTTP GET (ETag / Last-Modified) support.
-version: 2.0.0
+description: "A powerful Flutter package for caching images and videos with customizable expiration time and automatic cache management."
+version: 2.0.1
 homepage: https://github.com/SwanFlutter/flutter_media_cache
 repository: https://github.com/SwanFlutter/flutter_media_cache
 issue_tracker: https://github.com/SwanFlutter/flutter_media_cache/issues
