@@ -1,196 +1,252 @@
-# Flutter Media Cache
+# flutter_media_cache
 
-A powerful and easy-to-use Flutter package for caching images and videos with automatic expiration management, memory caching, and disk storage.
+[![pub.dev](https://img.shields.io/pub/v/flutter_media_cache.svg)](https://pub.dev/packages/flutter_media_cache)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![style: flutter_lints](https://img.shields.io/badge/style-flutter__lints-4BC0F5.svg)](https://pub.dev/packages/flutter_lints)
 
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](https://flutter.dev)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+Production-grade media caching for Flutter — images **and** videos — with a
+priority download queue, automatic LRU eviction, deduplication, exponential-
+backoff retry, per-download progress streams, and conditional HTTP GET.
+
+---
 
 ## Features
 
-- ✅ **Image Caching**: Automatically cache network images with memory and disk storage
-- ✅ **Video Caching**: Cache video files for offline playback
-- ✅ **Automatic Expiration**: Set custom cache duration (default: 7 days)
-- ✅ **Memory Cache**: Fast access with in-memory caching
-- ✅ **Disk Cache**: Persistent storage using device temporary directory
-- ✅ **Cache Management**: Clear cache, remove expired files, check cache size
-- ✅ **Easy to Use**: Simple widgets similar to `cached_network_image`
-- ✅ **Customizable**: Configure cache size, duration, and behavior
-- ✅ **Cross-Platform**: Works on Android, iOS, Windows, macOS, Linux, and Web
+| Feature | Details |
+|---|---|
+| 🗂️ Two-tier cache | In-memory LRU + disk storage |
+| 🚦 Priority queue | `high` / `normal` / `low` per request |
+| 🔁 Deduplication | Same URL → one in-flight download |
+| 🔄 Retry | Exponential backoff, configurable attempts |
+| 📡 Progress stream | `Stream<DownloadProgress>` with byte counts |
+| 🌐 Conditional GET | `ETag` / `If-None-Match` / `Last-Modified` |
+| 🧹 LRU eviction | Separate limits for memory (items) and disk (bytes) |
+| 🎬 Video support | `CachedVideo` widget with built-in controls |
+| ⏸️ Cancellation | Cancel any queued or in-flight download |
+| 📦 Preloading | `preloadAll([url1, url2, ...])` |
+| 📊 Analytics | Hit rate, miss count, total cache size |
 
-## Installation
+---
 
-Add this to your package's `pubspec.yaml` file:
+## Getting started
 
 ```yaml
 dependencies:
-  flutter_media_cache: ^1.0.1
+  flutter_media_cache: ^2.0.0
 ```
 
-Then run:
-
-```bash
-flutter pub get
-```
-
-## Quick Start
-
-### 1. Initialize the Cache Manager
+### Initialize once
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_media_cache/flutter_media_cache.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await MediaCacheManager.initialize(
     config: CacheConfig(
-      maxCacheDuration: Duration(days: 7),
-      useMemoryCache: true,
+      maxDiskBytes: 300 * 1024 * 1024,  // 300 MB disk
+      maxMemoryItems: 200,               // 200 items in RAM
+      maxAge: const Duration(days: 30),
+      maxConcurrentDownloads: 6,
+      maxRetries: 3,
     ),
   );
-  
-  runApp(MyApp());
+
+  runApp(const MyApp());
 }
 ```
 
-### 2. Display Cached Images
+Alternatively, use `CacheManagerProvider` near the root of your widget tree
+and skip the manual `initialize` call:
+
+```dart
+return CacheManagerProvider(
+  config: CacheConfig(maxDiskBytes: 300 * 1024 * 1024),
+  child: MaterialApp(home: HomePage()),
+);
+```
+
+---
+
+## Usage
+
+### Display a cached image
 
 ```dart
 CachedImage(
-  imageUrl: 'https://example.com/image.jpg',
-  width: 200,
-  height: 200,
+  imageUrl: 'https://picsum.photos/400/300',
+  width: 400,
+  height: 300,
   fit: BoxFit.cover,
   borderRadius: BorderRadius.circular(12),
+  priority: DownloadPriority.high,
+  placeholder: const ShimmerBox(),     // optional
+  errorWidget: const ErrorPlaceholder(), // optional
 )
 ```
 
-### 3. Cache and Display Videos
+### Custom progress indicator
 
 ```dart
-CachedVideo(
-  videoUrl: 'https://example.com/video.mp4',
-  builder: (context, videoData) {
-    if (videoData == null) return SizedBox();
-    // Use video_player package to display
-    return VideoPlayer(file: videoData);
+CachedImage(
+  imageUrl: 'https://example.com/large.jpg',
+  progressIndicatorBuilder: (context, url, progress) {
+    return CircularProgressIndicator(value: progress.progress);
   },
 )
 ```
 
-## Documentation
-
-### Main Documentation
-- **[doc/README.md](doc/README.md)** - Complete API documentation with detailed examples
-
-### Platform-Specific Guides
-- **[WEB_SUPPORT.md](WEB_SUPPORT.md)** - Web platform support and best practices
-- **[VIDEO_CACHING_GUIDE.md](VIDEO_CACHING_GUIDE.md)** - How to cache and display videos (English)
-- **[VIDEO_CACHING_GUIDE_FA.md](VIDEO_CACHING_GUIDE_FA.md)** - راهنمای کش و نمایش ویدئو (فارسی)
-
-### Quick References
-- **[README_FA.md](README_FA.md)** - فارسی راهنمای سریع
-- **[PACKAGE_STRUCTURE.md](PACKAGE_STRUCTURE.md)** - Package architecture and structure
-
-## Example
-
-Check out the [example](example) folder for complete working examples:
-
-```bash
-cd example
-flutter run
-```
-
-### Example Files
-- `example/lib/main.dart` - Complete demo application
-- `example/lib/advanced_example.dart` - Advanced usage patterns
-- `example/lib/list_example.dart` - Efficient caching in lists
-- `example/lib/complete_video_example.dart` - Video caching and playback
-- `example/lib/video_player_example.dart` - Video player integration
-
-## API Overview
-
-### MediaCacheManager
-
-```dart
-// Initialize
-await MediaCacheManager.initialize(config: CacheConfig(...));
-
-// Get cached image
-final imageData = await MediaCacheManager.instance.getImage(url);
-
-// Get cached video
-final videoData = await MediaCacheManager.instance.getVideo(url);
-
-// Clear cache
-await MediaCacheManager.instance.clearCache();
-
-// Get cache size
-final size = await MediaCacheManager.instance.getCacheSize();
-```
-
-### CachedImage Widget
-
-```dart
-CachedImage(
-  imageUrl: 'https://example.com/image.jpg',
-  width: 200,
-  height: 200,
-  fit: BoxFit.cover,
-  borderRadius: BorderRadius.circular(12),
-  placeholder: CircularProgressIndicator(),
-  errorWidget: Icon(Icons.error),
-)
-```
-
-### CachedVideo Widget
+### Display a cached video
 
 ```dart
 CachedVideo(
-  videoUrl: 'https://example.com/video.mp4',
-  builder: (context, videoData) {
-    // videoData is File on native, Uint8List on web
-    return VideoPlayer(file: videoData);
-  },
-  placeholder: CircularProgressIndicator(),
-  errorWidget: Icon(Icons.error),
+  videoUrl: 'https://example.com/clip.mp4',
+  autoPlay: false,
+  showControls: true,
+  aspectRatio: 16 / 9,
 )
 ```
 
-## Configuration
+### Programmatic fetch (bytes)
+
+```dart
+final result = await MediaCacheManager.instance.getMedia(
+  'https://example.com/image.jpg',
+  priority: DownloadPriority.high,
+);
+
+if (result.bytes != null) {
+  // Use result.bytes (Uint8List) or result.filePath (String? on non-web)
+}
+```
+
+### Fetch with progress stream
+
+```dart
+final (:result, :progress) = MediaCacheManager.instance.getMediaWithProgress(
+  'https://example.com/video.mp4',
+);
+
+progress.listen((p) {
+  print('${p.bytesDownloaded} / ${p.totalBytes ?? "?"}  '
+        '— ${p.status.name}');
+});
+
+final data = await result;
+```
+
+### Custom progress UI with `DownloadProgressBuilder`
+
+```dart
+DownloadProgressBuilder(
+  url: 'https://example.com/video.mp4',
+  builder: (context, progress, child) {
+    if (progress == null || progress.isCompleted) return child!;
+    return LinearProgressIndicator(value: progress.progress);
+  },
+  child: const Icon(Icons.check_circle, color: Colors.green),
+)
+```
+
+### Preloading
+
+```dart
+// Fire-and-forget; uses low priority so it doesn't block visible content.
+await MediaCacheManager.instance.preloadAll([
+  'https://example.com/next1.jpg',
+  'https://example.com/next2.jpg',
+]);
+```
+
+### Cache management
+
+```dart
+final manager = MediaCacheManager.instance;
+
+// Is this URL cached?
+final cached = manager.isCached('https://example.com/image.jpg');
+
+// Remove one entry.
+await manager.removeEntry('https://example.com/image.jpg');
+
+// Remove all expired entries.
+await manager.clearExpired();
+
+// Wipe everything.
+await manager.clearAll();
+
+// Analytics snapshot.
+final stats = manager.stats;
+print('Hit rate: ${(stats.hitRate * 100).toStringAsFixed(1)}%');
+print('Disk used: ${stats.totalSizeBytes ~/ 1024} KB');
+```
+
+---
+
+## Configuration reference
 
 ```dart
 CacheConfig(
-  maxCacheDuration: Duration(days: 7),      // Cache expiration time
-  maxCacheSize: 100 * 1024 * 1024,          // 100MB max cache size
-  useMemoryCache: true,                      // Enable memory cache
-  maxMemoryCacheSize: 100,                   // Max items in memory
+  maxDiskBytes: 200 * 1024 * 1024,   // 200 MB (default)
+  maxMemoryItems: 150,                // LRU item cap (default)
+  maxAge: const Duration(days: 14),  // TTL (default)
+  maxConcurrentDownloads: 4,         // parallel limit (default)
+  maxRetries: 3,                     // retry attempts (default)
+  retryBaseDelay: Duration(seconds: 1), // backoff base (default)
+  downloadTimeout: Duration(seconds: 30),
+  connectTimeout: Duration(seconds: 10),
+  useMemoryCache: true,
+  useConditionalGet: true,           // ETag / Last-Modified
+  subdirectoryName: 'flutter_media_cache',
+  customHeaders: {'Authorization': 'Bearer token'},
 )
 ```
 
-## Platform Support
+---
 
-| Platform | Status |
-|----------|--------|
-| Android | ✅ Fully supported |
-| iOS | ✅ Fully supported |
-| Windows | ✅ Fully supported |
-| macOS | ✅ Fully supported |
-| Linux | ✅ Fully supported |
-| Web | ✅ Fully supported (memory cache) |
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                   MediaCacheManager                       │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │
+│  │ LruMemory   │  │  CacheIndex  │  │ DownloadEngine │  │
+│  │ Cache       │  │  (disk meta) │  │ (queue+retry)  │  │
+│  └─────────────┘  └──────────────┘  └────────────────┘  │
+└──────────────────────────────────────────────────────────┘
+       ▲                   ▲                   ▲
+  Memory hit           Disk hit           Network miss
+  (< 1 ms)            (I/O)              (HTTP + retry)
+```
+
+**Request flow:**
+
+1. Check `LruMemoryCache` (in-process, instant).
+2. Check `CacheIndex` → read file from disk → promote to memory.
+3. Enqueue in `DownloadEngine` — deduplicated, priority-sorted.
+4. On success: persist bytes to disk, update index, promote to memory.
+5. On failure: exponential-backoff retry up to `maxRetries`.
+
+---
+
+## Migration from v1
+
+| v1 | v2 |
+|---|---|
+| `FlutterMediaCache()` | `MediaCacheManager.initialize()` |
+| `CachedImage(url: ...)` | `CachedImage(imageUrl: ...)` |
+| `FlutterMediaCache.clearCache()` | `MediaCacheManager.instance.clearAll()` |
+| No progress support | `getMediaWithProgress(url)` |
+| No video widget | `CachedVideo(videoUrl: ...)` |
+
+---
+
+## Contributing
+
+PRs and issues are welcome at
+[github.com/SwanFlutter/flutter_media_cache](https://github.com/SwanFlutter/flutter_media_cache).
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Credits
-
-Inspired by:
-- [cached_network_image](https://pub.dev/packages/cached_network_image)
-- [fast_cached_network_image](https://pub.dev/packages/fast_cached_network_image)
-
-Uses:
-- [path_provider_master](https://pub.dev/packages/path_provider_master)
-- [http](https://pub.dev/packages/http)
-- [crypto](https://pub.dev/packages/crypto)
+MIT © [SwanFlutter](https://swanflutterdev.com)

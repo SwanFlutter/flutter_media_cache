@@ -1,48 +1,49 @@
-# FlutterMediaCach
+# Changelog
 
-## 1.0.1
-
-### Changed
-* **BREAKING CHANGE**: Updated `CachedImage` widget API
-  * `placeholder` property now accepts a callback function: `Widget Function(BuildContext context, String url)`
-  * `errorWidget` property now accepts a callback function: `Widget Function(BuildContext context, String url, Object error)`
-  * This change provides more flexibility by giving access to context, URL, and error information
-
-### Migration Guide
-Before:
-```dart
-CachedImage(
-  imageUrl: 'https://example.com/image.jpg',
-  placeholder: Container(color: Colors.grey),
-  errorWidget: Icon(Icons.error),
-)
-```
-
-After:
-```dart
-CachedImage(
-  imageUrl: 'https://example.com/image.jpg',
-  placeholder: (context, url) => Container(color: Colors.grey),
-  errorWidget: (context, url, error) => Icon(Icons.error),
-)
-```
+All notable changes to `flutter_media_cache` will be documented here.
+This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## 1.0.0
+## [2.0.0] — 2025-XX-XX
 
-* Initial release of Flutter Media Cache
-* Image caching with memory and disk storage
-* Video caching support
-* Automatic cache expiration management
-* Configurable cache size and duration
-* CachedImage widget for easy image display
-* CachedVideo widget for video file access
-* Cache management utilities (clear, size check, expired cleanup)
-* Full cross-platform support (Android, iOS, Windows, macOS, Linux, Web)
-* Web platform support with memory-based caching
-* Integration with path_provider_master for directory access
-* Platform-specific implementations (IO for native, Web for browsers)
+### ⚠️ Breaking Changes
+- Complete rewrite — public API is redesigned. See README for migration guide.
+- `FlutterMediaCache` class replaced by `MediaCacheManager` singleton.
+- `CachedImage` constructor parameters reorganised (`imageUrl` replaces `url`).
 
+### ✨ New Features
+- **Priority download queue** — `DownloadPriority.high/normal/low` per request.
+- **Request deduplication** — duplicate URLs share one in-flight download.
+- **Exponential-backoff retry** — configurable via `CacheConfig.maxRetries`.
+- **Per-download progress stream** — `Stream<DownloadProgress>` with bytes received.
+- **Conditional HTTP GET** — `ETag` / `Last-Modified` / `If-None-Match` support.
+- **Smart LRU eviction** — separate memory (item count) and disk (byte size) limits.
+- **Preloading API** — `MediaCacheManager.instance.preloadAll([...])`.
+- **Cancellation** — `cancelDownload(url)` stops queued or in-flight tasks.
+- **`CachedVideo`** widget with built-in progress indicator and playback controls.
+- **`DownloadProgressBuilder`** for fully custom progress UIs.
+- **`CacheManagerProvider`** `InheritedWidget` for dependency injection.
+- **`CacheStats`** — hit count, miss count, eviction count, hit rate, total size.
+- **Atomic index persistence** — write-then-rename prevents index corruption.
+- **Orphan file cleanup** — dangling files not in the index are removed on startup.
+
+### 🔧 Improvements
+- Cache keys now use **SHA-256** (not MD5) for collision-resistance.
+- Download engine lives on the main isolate with `async`/`await` — no Isolate
+  overhead for small payloads, correct Flutter API access.
+- `CacheConfig.copyWith()` for easy per-screen overrides.
+- Debounced index writes (2 s) — avoids disk thrash on rapid requests.
+- `ResizeImage` support in `CachedImage` to reduce decoded memory footprint.
+
+### 🐛 Bug Fixes
+- Fixed: Concurrent requests for the same URL triggered multiple downloads.
+- Fixed: Memory cache could grow unboundedly.
+- Fixed: Download failures were silently swallowed.
+- Fixed: Stale index entries for missing files caused errors.
 
 ---
+
+## [1.x.x] — Legacy
+
+See Git history for 1.x changes.
