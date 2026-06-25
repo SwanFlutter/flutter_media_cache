@@ -1,20 +1,25 @@
 // lib/src/core/media_cache_manager.dart
+//
+// Cross-platform (Android / iOS / macOS / Windows / Linux / Web) cache manager.
+// dart:io is never imported directly here; all file I/O is delegated to
+// PlatformStorage so that this file compiles cleanly on the web.
 
 import 'dart:async';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:path_provider_master/path_provider_master.dart';
 
 import '../core/cache_config.dart';
 import '../core/exceptions.dart';
 import '../core/models.dart';
 import '../download/download_engine.dart';
+import '../platform/platform_file.dart';
 import '../storage/cache_index.dart';
 import '../storage/lru_memory_cache.dart';
 import '../utils/key_generator.dart';
 
 /// The central singleton that orchestrates caching, downloading, and eviction.
+///
+/// Works on **all** Flutter platforms:
+///   - Android / iOS / macOS / Windows / Linux — memory + disk cache.
+///   - Web — memory-only cache (disk ops silently skipped).
 ///
 /// ## Initialization
 /// ```dart
@@ -27,11 +32,12 @@ import '../utils/key_generator.dart';
 ///
 /// ## Usage
 /// ```dart
-/// // Simple image fetch (returns bytes on all platforms)
+/// // Simple image fetch
 /// final result = await MediaCacheManager.instance.getMedia('https://...');
 ///
 /// // With progress stream
-/// final (:result, :progress) = MediaCacheManager.instance.getMediaWithProgress('https://...');
+/// final (:result, :progress) =
+///     MediaCacheManager.instance.getMediaWithProgress('https://...');
 /// progress.listen((p) => print('${p.progress}'));
 /// final data = await result;
 /// ```
@@ -40,7 +46,8 @@ class MediaCacheManager {
     : _config = config,
       _index = CacheIndex(maxDiskBytes: config.maxDiskBytes),
       _memCache = LruMemoryCache(maxItems: config.maxMemoryItems),
-      _engine = DownloadEngine(config: config);
+      _engine = DownloadEngine(config: config),
+      _storage = createPlatformStorage();
 
   // ── Singleton ──────────────────────────────────────────────────────────────
 
@@ -75,9 +82,7 @@ class MediaCacheManager {
   final CacheIndex _index;
   final LruMemoryCache _memCache;
   final DownloadEngine _engine;
-
-  late final Directory _cacheDir;
-  late final File _indexFile;
+  final PlatformStorage _storage;
 
   // Analytics counters.
   int _hitCount = 0;
@@ -92,15 +97,15 @@ class MediaCacheManager {
   // ── Initialization ─────────────────────────────────────────────────────────
 
   Future<void> _init() async {
-    final base = kIsWeb
-        ? null
-        : await PathProviderMaster.getTemporaryDirectory();
+    await _storage.init(_config.subdirectoryName);
 
-    if (!kIsWeb) {
-      _cacheDir = Directory('${base!.path}/${_config.subdirectoryName}');
-      await _cacheDir.create(recursive: true);
-      _indexFile = File('${_cacheDir.path}/_index.json');
-      await _index.loadFrom(_indexFile);
+    if (_storage.hasDisk) {
+      // Load persisted index from disk (key = '_index', ext = '.json').
+      final indexPath = '${_storage.cacheDir}/_index.json';
+      final bytes = await _storage.read(indexPath);
+      if (bytes != null) {
+        _index.loadFromBytes(bytes);
+      }
       await _purgeOrphanedFiles();
     }
   }
@@ -133,13 +138,12 @@ class MediaCacheManager {
       }
     }
 
-    // 2. Disk cache hit
-    if (!kIsWeb) {
+    // 2. Disk cache hit (native only)
+    if (_storage.hasDisk) {
       final entry = _index.get(key);
       if (entry != null && !entry.isExpired(_config.maxAge)) {
-        final file = File(entry.localPath);
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
+        final bytes = await _storage.read(entry.localPath);
+        if (bytes != null) {
           if (_config.useMemoryCache) _memCache.put(key, bytes);
           _hitCount++;
           _scheduleSave();
@@ -169,7 +173,7 @@ class MediaCacheManager {
     _assertNotDisposed();
     final key = KeyGenerator.fromUrl(url);
 
-    // Serve from cache without a meaningful progress stream.
+    // Serve from memory cache without a meaningful progress stream.
     if (_config.useMemoryCache && _memCache.containsKey(key)) {
       return (
         result: getMedia(url, priority: priority),
@@ -217,9 +221,8 @@ class MediaCacheManager {
     _memCache.remove(key);
     final entry = _index.get(key);
     _index.remove(key);
-    if (entry != null && !kIsWeb) {
-      final file = File(entry.localPath);
-      if (await file.exists()) await file.delete();
+    if (entry != null && _storage.hasDisk) {
+      await _storage.delete(entry.localPath);
     }
     _scheduleSave();
   }
@@ -229,12 +232,8 @@ class MediaCacheManager {
     _assertNotDisposed();
     _memCache.clear();
     _index.clear();
-    if (!kIsWeb && await _cacheDir.exists()) {
-      await for (final entity in _cacheDir.list()) {
-        if (entity is File && !entity.path.endsWith('_index.json')) {
-          await entity.delete();
-        }
-      }
+    if (_storage.hasDisk) {
+      await _storage.deleteAll();
     }
     await _saveIndex();
   }
@@ -245,8 +244,7 @@ class MediaCacheManager {
     final paths = _index.removeExpired(_config.maxAge);
     for (final path in paths) {
       _evictionCount++;
-      final file = File(path);
-      if (await file.exists()) await file.delete();
+      if (_storage.hasDisk) await _storage.delete(path);
     }
     if (paths.isNotEmpty) _scheduleSave();
   }
@@ -254,16 +252,32 @@ class MediaCacheManager {
   /// Current cache statistics.
   CacheStats get stats => CacheStats(
     totalEntries: _index.totalEntries,
-    totalSizeBytes: _index.totalBytes,
+    totalSizeBytes: _storage.hasDisk ? _index.totalBytes : _memCache.totalBytes,
     hitCount: _hitCount,
     missCount: _missCount,
     evictionCount: _evictionCount,
   );
 
+  /// Total bytes currently stored (memory on web, disk on native).
+  int get totalCacheSize =>
+      _storage.hasDisk ? _index.totalBytes : _memCache.totalBytes;
+
   /// Whether [url] is currently in the cache (memory or disk).
   bool isCached(String url) {
     final key = KeyGenerator.fromUrl(url);
     return _memCache.containsKey(key) || _index.containsKey(key);
+  }
+
+  /// Formats [bytes] into a human-readable string (e.g. "12.3 MB").
+  static String formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   // ── Internal Helpers ───────────────────────────────────────────────────────
@@ -291,10 +305,9 @@ class MediaCacheManager {
     // 304 Not Modified — the cached version is still valid.
     if (result.notModified) {
       final entry = _index.get(key);
-      if (entry != null && !kIsWeb) {
-        final file = File(entry.localPath);
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
+      if (entry != null && _storage.hasDisk) {
+        final bytes = await _storage.read(entry.localPath);
+        if (bytes != null) {
           if (_config.useMemoryCache) _memCache.put(key, bytes);
           return CacheResult.hit(
             url: url,
@@ -323,25 +336,26 @@ class MediaCacheManager {
     if (_config.useMemoryCache) _memCache.put(key, result.bytes);
 
     String? filePath;
-    if (!kIsWeb) {
-      filePath = '${_cacheDir.path}/$key$ext';
-      await File(filePath).writeAsBytes(result.bytes, flush: true);
+    if (_storage.hasDisk) {
+      filePath = await _storage.write(key, ext, result.bytes);
 
-      final entry = CacheEntry(
-        url: url,
-        key: key,
-        localPath: filePath,
-        mediaType: mediaType,
-        createdAt: DateTime.now(),
-        lastAccessedAt: DateTime.now(),
-        sizeBytes: result.bytes.length,
-        etag: result.etag,
-        lastModified: result.lastModified,
-        contentType: result.contentType,
-      );
-      _index.put(entry);
-      await _enforceStorageLimit();
-      _scheduleSave();
+      if (filePath != null) {
+        final entry = CacheEntry(
+          url: url,
+          key: key,
+          localPath: filePath,
+          mediaType: mediaType,
+          createdAt: DateTime.now(),
+          lastAccessedAt: DateTime.now(),
+          sizeBytes: result.bytes.length,
+          etag: result.etag,
+          lastModified: result.lastModified,
+          contentType: result.contentType,
+        );
+        _index.put(entry);
+        await _enforceStorageLimit();
+        _scheduleSave();
+      }
     }
 
     return CacheResult.miss(
@@ -366,28 +380,38 @@ class MediaCacheManager {
     final evictedPaths = _index.evictToLimit();
     for (final path in evictedPaths) {
       _evictionCount++;
-      final file = File(path);
-      if (await file.exists()) await file.delete();
+      await _storage.delete(path);
     }
   }
 
   Future<void> _purgeOrphanedFiles() async {
+    if (!_storage.hasDisk) return;
     final indexedPaths = _index.allEntries.map((e) => e.localPath).toSet();
-    await for (final entity in _cacheDir.list()) {
-      if (entity is File && !entity.path.endsWith('_index.json')) {
-        if (!indexedPaths.contains(entity.path)) await entity.delete();
-      }
+    // Add the index file itself so it's never deleted.
+    indexedPaths.add('${_storage.cacheDir}/_index.json');
+    // _IoPlatformStorage exposes purgeOrphans via OrphanPurgeable mixin.
+    final storage = _storage;
+    if (storage is OrphanPurgeable) {
+      await storage.purgeOrphans(indexedPaths);
     }
   }
 
   void _scheduleSave() {
+    if (!_storage.hasDisk) return;
     _indexSaveDebounce?.cancel();
     _indexSaveDebounce = Timer(const Duration(seconds: 2), _saveIndex);
   }
 
   Future<void> _saveIndex() async {
-    if (kIsWeb || _disposed) return;
-    await _index.saveTo(_indexFile);
+    if (!_storage.hasDisk || _disposed) return;
+    try {
+      final bytes = _index.toBytes();
+      // Write the index JSON directly using a fixed key + extension.
+      // The io implementation places it at <cacheDir>/_index.json.
+      await _storage.write('_index', '.json', bytes);
+    } catch (_) {
+      // Non-fatal — index will be rebuilt on next launch.
+    }
   }
 
   void _assertNotDisposed() {

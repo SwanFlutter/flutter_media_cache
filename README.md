@@ -1,6 +1,6 @@
 # flutter_media_cache
 
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](https://flutter.dev)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![pub.dev](https://img.shields.io/pub/v/flutter_media_cache.svg)](https://pub.dev/packages/flutter_media_cache)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -9,6 +9,8 @@
 Production-grade media caching for Flutter — images **and** videos — with a
 priority download queue, automatic LRU eviction, deduplication, exponential-
 backoff retry, per-download progress streams, and conditional HTTP GET.
+
+Supports **all Flutter platforms**: Android · iOS · Web · macOS · Windows · Linux.
 
 ---
 
@@ -27,6 +29,7 @@ backoff retry, per-download progress streams, and conditional HTTP GET.
 | ⏸️ Cancellation | Cancel any queued or in-flight download |
 | 📦 Preloading | `preloadAll([url1, url2, ...])` |
 | 📊 Analytics | Hit rate, miss count, total cache size |
+| 🌍 All platforms | Android · iOS · Web · macOS · Windows · Linux |
 
 ---
 
@@ -230,7 +233,30 @@ CacheConfig(
 
 ---
 
+## Web platform notes
+
+On **web**, the package automatically switches to a memory-only caching strategy:
+
+| Feature | Native (Android/iOS/desktop) | Web |
+|---|---|---|
+| Storage | Disk + memory | Memory only |
+| Cache persistence | Survives app restart | Lost on page reload |
+| `CachedImage` | Bytes from disk/network | Bytes from memory/network |
+| `CachedVideo` | `VideoPlayerController.file()` | `VideoPlayerController.networkUrl()` |
+
+No code changes are required — the same API works everywhere.  On web, `CacheResult.filePath` is `null` and `CacheResult.bytes` always contains the image data.
+
+---
+
 ## Migration from v1
+
+| v1 | v2 |
+|---|---|
+| `FlutterMediaCache()` | `MediaCacheManager.initialize()` |
+| `CachedImage(url: ...)` | `CachedImage(imageUrl: ...)` |
+| `FlutterMediaCache.clearCache()` | `MediaCacheManager.instance.clearAll()` |
+| No progress support | `getMediaWithProgress(url)` |
+| No video widget | `CachedVideo(videoUrl: ...)` |
 
 | v1 | v2 |
 |---|---|

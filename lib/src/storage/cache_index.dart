@@ -1,17 +1,20 @@
 // lib/src/storage/cache_index.dart
+//
+// NOTE: This file intentionally avoids dart:io imports.
+// Disk persistence is delegated to PlatformStorage (platform_file.dart).
 
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
-import '../core/models.dart';
 import '../core/exceptions.dart';
+import '../core/models.dart';
 
 /// Persistent LRU index stored as a JSON file alongside cached media files.
 ///
 /// Responsibilities:
 ///   - Map URL → [CacheEntry] (O(1) lookup).
 ///   - Enforce max-disk-bytes limit via LRU eviction.
-///   - Persist to / restore from disk atomically.
+///   - Persist to / restore from disk atomically (no-op on web).
 class CacheIndex {
   CacheIndex({required this.maxDiskBytes});
 
@@ -52,7 +55,7 @@ class CacheIndex {
   List<CacheEntry> get allEntries => List.unmodifiable(_entries.values);
 
   /// Evicts LRU entries until total disk usage is below [maxDiskBytes].
-  /// Returns the list of file paths that should be deleted.
+  /// Returns the list of local paths that should be deleted.
   List<String> evictToLimit() {
     final evicted = <String>[];
     while (_totalBytes > maxDiskBytes && _entries.isNotEmpty) {
@@ -85,34 +88,34 @@ class CacheIndex {
     _totalBytes = 0;
   }
 
-  // ── Persistence ────────────────────────────────────────────────────────────
+  // ── Persistence (raw bytes, platform-agnostic) ─────────────────────────────
 
-  Future<void> loadFrom(File indexFile) async {
-    if (!await indexFile.exists()) return;
+  /// Deserialises the index from a JSON [Uint8List].
+  /// Pass the raw bytes that [PlatformStorage.read] returned.
+  void loadFromBytes(Uint8List data) {
     try {
-      final raw = await indexFile.readAsString();
+      final raw = utf8.decode(data);
       final List<dynamic> list = jsonDecode(raw) as List<dynamic>;
       for (final item in list) {
         final entry = CacheEntry.fromJson(item as Map<String, dynamic>);
         _entries[entry.key] = entry;
         _totalBytes += entry.sizeBytes;
       }
-    } catch (e) {
-      // Corrupt index — start fresh. Physical files remain until next eviction.
+    } catch (_) {
+      // Corrupt index — start fresh.
       _entries.clear();
       _totalBytes = 0;
     }
   }
 
-  Future<void> saveTo(File indexFile) async {
+  /// Serialises the index to a JSON [Uint8List] suitable for
+  /// [PlatformStorage.write].
+  Uint8List toBytes() {
     try {
       final json = jsonEncode(_entries.values.map((e) => e.toJson()).toList());
-      // Atomic write via temp file + rename.
-      final tmp = File('${indexFile.path}.tmp');
-      await tmp.writeAsString(json, flush: true);
-      await tmp.rename(indexFile.path);
+      return Uint8List.fromList(utf8.encode(json));
     } catch (e) {
-      throw StorageException('Failed to persist cache index', cause: e);
+      throw StorageException('Failed to serialise cache index', cause: e);
     }
   }
 }

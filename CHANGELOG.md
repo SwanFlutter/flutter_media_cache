@@ -4,9 +4,25 @@
 
 ## [2.0.1] — 2026-06-25
 
+### ✨ New Features
+- **Web platform support** — package now works on all 6 Flutter platforms:
+  Android · iOS · Web · macOS · Windows · Linux.
+- `MediaCacheManager.formatBytes(int)` utility for human-readable cache sizes.
+- `MediaCacheManager.totalCacheSize` getter (memory bytes on web, disk bytes on native).
 
-- Fixed: Fix pub point.
+### 🔧 Improvements
+- `CachedVideo` on web uses `VideoPlayerController.networkUrl()` automatically —
+  no code changes needed in calling code.
+- All disk I/O isolated behind `PlatformStorage` conditional-import abstraction;
+  `dart:io` is never imported on web.
+- `CacheIndex` rewritten to be `dart:io`-free (serialises via `Uint8List`).
+- Orphaned file cleanup (`purgeOrphans`) runs at startup on native platforms.
 
+### 🐛 Bug Fixes
+- Fixed: Package failed to compile on Flutter Web due to `dart:io` imports in
+  `media_cache_manager.dart` and `cached_video.dart`.
+- Fixed: `CachedVideo` crashed on web with "Video file path unavailable".
+- Fixed: pub point issues.
 
 ---
 

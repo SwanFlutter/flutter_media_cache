@@ -1,17 +1,36 @@
 // lib/src/widgets/cached_video.dart
+//
+// Cross-platform cached video widget.
+//
+// Native (Android/iOS/macOS/Windows/Linux):
+//   Uses VideoPlayerController.file() with the locally cached file path.
+//
+// Web:
+//   Uses VideoPlayerController.networkUrl() pointing directly at the source
+//   URL, because the web browser already handles its own HTTP caching and
+//   dart:io File is unavailable.  The bytes fetched by MediaCacheManager are
+//   kept in memory so subsequent calls return quickly.
 
-import 'dart:io';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../core/media_cache_manager.dart';
 import '../core/models.dart';
+// dart:io is only imported on non-web platforms via a conditional import.
+// We use a separate helper to avoid dart:io at the top level.
+import 'cached_video_helper.dart';
 
 /// A cached video player widget built on top of [video_player].
 ///
-/// Automatically downloads and caches the video file on first view,
-/// then serves from disk on subsequent plays — even offline.
+/// On **native** platforms (Android / iOS / macOS / Windows / Linux) the
+/// video is downloaded once, persisted to disk, and served from the local
+/// file on every subsequent play — even offline.
+///
+/// On **web** the widget falls back to `VideoPlayerController.networkUrl()`
+/// because browsers do not expose a writable file system.  The download bytes
+/// are still held in the memory cache so repeated access to the same URL is
+/// fast within the same session.
 ///
 /// ```dart
 /// CachedVideo(
@@ -94,7 +113,6 @@ class _CachedVideoState extends State<CachedVideo> {
       final (:result, :progress) = MediaCacheManager.instance
           .getMediaWithProgress(widget.videoUrl, priority: widget.priority);
 
-      // Listen to download progress for UI feedback.
       progress.listen(
         (p) {
           if (mounted) setState(() => _progress = p);
@@ -106,20 +124,20 @@ class _CachedVideoState extends State<CachedVideo> {
       final cacheResult = await result;
       if (!mounted) return;
 
-      // On native platforms use the local file path for best performance.
-      final filePath = cacheResult.filePath;
-      if (filePath == null || filePath.isEmpty) {
-        _setError('Video file path unavailable on this platform');
-        return;
+      VideoPlayerController controller;
+
+      if (kIsWeb) {
+        // ── Web: play directly from the network URL ────────────────────────
+        // The browser's HTTP cache handles caching; our memory cache keeps
+        // the bytes for programmatic access (e.g. getMedia()).
+        controller = VideoPlayerController.networkUrl(
+          Uri.parse(widget.videoUrl),
+        );
+      } else {
+        // ── Native: play from the locally cached file ──────────────────────
+        controller = await buildNativeVideoController(cacheResult);
       }
 
-      final file = File(filePath);
-      if (!await file.exists()) {
-        _setError('Cached file missing: $filePath');
-        return;
-      }
-
-      final controller = VideoPlayerController.file(file);
       await controller.initialize();
       controller.setLooping(widget.looping);
       if (widget.autoPlay) await controller.play();
