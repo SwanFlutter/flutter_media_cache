@@ -1,5 +1,7 @@
 # flutter_media_cache
 
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue.svg)](https://flutter.dev)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![pub.dev](https://img.shields.io/pub/v/flutter_media_cache.svg)](https://pub.dev/packages/flutter_media_cache)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![style: flutter_lints](https://img.shields.io/badge/style-flutter__lints-4BC0F5.svg)](https://pub.dev/packages/flutter_lints)
