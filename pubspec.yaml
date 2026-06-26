@@ -1,6 +1,6 @@
 name: flutter_media_cache
 description: "A powerful Flutter package for caching images and videos with customizable expiration time and automatic cache management."
-version: 2.0.1
+version: 3.0.0
 homepage: https://github.com/SwanFlutter/flutter_media_cache
 repository: https://github.com/SwanFlutter/flutter_media_cache
 issue_tracker: https://github.com/SwanFlutter/flutter_media_cache/issues
@@ -20,9 +20,6 @@ dependencies:
 
   # File system paths
   path_provider_master: ^1.0.0
-
-  # Video playback
-  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:

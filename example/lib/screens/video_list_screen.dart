@@ -1,4 +1,9 @@
 // example/lib/screens/video_list_screen.dart
+//
+// This example uses the builder pattern of CachedVideo. The user provides
+// their own video player widget — any package that accepts a file path or
+// network URL works. In this demo we use a simple placeholder; swap it
+// with your preferred video player package.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_media_cache/flutter_media_cache.dart';
@@ -76,9 +81,48 @@ class _VideoCard extends StatelessWidget {
           // ── CachedVideo widget ─────────────────────────────────────────────
           CachedVideo(
             videoUrl: item.url,
-            autoPlay: false,
-            showControls: true,
-            aspectRatio: 16 / 9,
+
+            // Builder receives the CacheResult. Use whatever video player
+            // package you like — here we just show the cached path.
+            builder: (context, result) => AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                color: Colors.black87,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.play_circle_outline,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        result.isFromCache ? 'Cached' : 'Network',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (result.filePath != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            result.filePath!,
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             priority: DownloadPriority.normal,
 
             // Custom loading state with byte-level progress.

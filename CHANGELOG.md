@@ -1,6 +1,38 @@
 # Changelog
 
+## [3.0.0] — 2026-06-25
 
+### ⚠️ Breaking Changes
+- **`CachedVideo` now uses a builder pattern** — the `autoPlay`, `showControls`,
+  and `aspectRatio` parameters have been removed. Use the new `builder` callback
+  to supply your own video player widget with full control.
+
+  ```dart
+  // Before (v2)
+  CachedVideo(
+    videoUrl: url,
+    autoPlay: false,
+    showControls: true,
+    aspectRatio: 16 / 9,
+  )
+
+  // After (v3)
+  CachedVideo(
+    videoUrl: url,
+    builder: (context, result) => YourPlayer(filePath: result.filePath),
+  )
+  ```
+
+- Removed `video_player` dependency — the package no longer ships a built-in
+  player. Users choose any player they prefer (video_player, chewy, fvp, etc.).
+
+### 🌍 Improvements
+- **Full 6-platform support** — removing `video_player` unblocks Windows and
+  Linux, giving the package 20/20 on pub.dev platform score.
+- Zero platform-specific dependencies; only `flutter`, `http`, `crypto`, and
+  `path_provider_master`.
+
+---
 
 ## [2.0.1] — 2026-06-25
 

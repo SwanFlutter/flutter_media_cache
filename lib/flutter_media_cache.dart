@@ -19,7 +19,11 @@
 ///
 /// ```dart
 /// CachedImage(imageUrl: 'https://picsum.photos/400/300')
-/// CachedVideo(videoUrl: 'https://example.com/video.mp4')
+///
+/// CachedVideo(
+///   videoUrl: 'https://example.com/video.mp4',
+///   builder: (context, result) => YourVideoPlayer(filePath: result.filePath),
+/// )
 /// ```
 library;
 

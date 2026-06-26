@@ -37,7 +37,7 @@ Supports **all Flutter platforms**: Android · iOS · Web · macOS · Windows ·
 
 ```yaml
 dependencies:
-  flutter_media_cache: ^2.0.1
+  flutter_media_cache: ^3.0.0
 ```
 
 ### Initialize once
@@ -102,12 +102,27 @@ CachedImage(
 
 ### Display a cached video
 
+`CachedVideo` uses a **builder pattern** — you provide any video player widget
+via the `builder` callback. The `CacheResult` exposes `url`, `filePath`,
+`bytes`, and `isFromCache`.
+
 ```dart
 CachedVideo(
   videoUrl: 'https://example.com/clip.mp4',
-  autoPlay: false,
-  showControls: true,
-  aspectRatio: 16 / 9,
+  builder: (context, result) => AspectRatio(
+    aspectRatio: 16 / 9,
+    child: YourVideoPlayer(filePath: result.filePath),
+  ),
+)
+```
+
+With a custom loading state:
+
+```dart
+CachedVideo(
+  videoUrl: 'https://example.com/clip.mp4',
+  placeholder: const MyLoadingWidget(),
+  builder: (context, result) => VideoPlayerWidget(path: result.filePath),
 )
 ```
 
@@ -242,21 +257,21 @@ On **web**, the package automatically switches to a memory-only caching strategy
 | Storage | Disk + memory | Memory only |
 | Cache persistence | Survives app restart | Lost on page reload |
 | `CachedImage` | Bytes from disk/network | Bytes from memory/network |
-| `CachedVideo` | `VideoPlayerController.file()` | `VideoPlayerController.networkUrl()` |
+| `CachedVideo` | `CacheResult.filePath` available | `CacheResult.filePath` is `null` |
 
 No code changes are required — the same API works everywhere.  On web, `CacheResult.filePath` is `null` and `CacheResult.bytes` always contains the image data.
 
 ---
 
-## Migration from v1
+## Migration from v2
 
-| v1 | v2 |
+| v2 | v3 |
 |---|---|
-| `FlutterMediaCache()` | `MediaCacheManager.initialize()` |
-| `CachedImage(url: ...)` | `CachedImage(imageUrl: ...)` |
-| `FlutterMediaCache.clearCache()` | `MediaCacheManager.instance.clearAll()` |
-| No progress support | `getMediaWithProgress(url)` |
-| No video widget | `CachedVideo(videoUrl: ...)` |
+| `CachedVideo(videoUrl: url, autoPlay: false, showControls: true)` | `CachedVideo(videoUrl: url, builder: (ctx, r) => YourPlayer(filePath: r.filePath))` |
+
+---
+
+## Migration from v1
 
 | v1 | v2 |
 |---|---|
